@@ -18,20 +18,26 @@ from .scheduler import load_schedule, get_daemon_status
 from .reports import list_reports, generate_report, save_report, get_reports_dir
 
 
-# Status icons (emoji-based for simplicity)
-ICON_PROTECTED = "🛡️"
+# Get the assets directory
+ASSETS_DIR = Path(__file__).parent / "assets"
+ICON_WIDE_PUTIN = str(ASSETS_DIR / "wide_putin.png")
+SOVIET_MARCH = str(ASSETS_DIR / "soviet_march.mp3")
+
+# Fallback emoji icons
 ICON_SCANNING = "🔍"
 ICON_THREAT = "⚠️"
-ICON_DISABLED = "⏸️"
 
 
 class AntivirusApp(rumps.App):
     """Box of Kingles Menu Bar Application."""
 
     def __init__(self):
+        # Use wide putin as the icon
+        icon_path = ICON_WIDE_PUTIN if Path(ICON_WIDE_PUTIN).exists() else None
+
         super().__init__(
             name="Box of Kingles",
-            title=ICON_DISABLED,
+            icon=icon_path,
             quit_button=None,  # We'll add our own
         )
 
@@ -39,6 +45,8 @@ class AntivirusApp(rumps.App):
         self.recent_threats: List[dict] = []
         self.scanning = False
         self.config = load_config()
+        self.music_process: Optional[subprocess.Popen] = None
+        self.music_enabled = True
 
         # Build the menu
         self.build_menu()
@@ -46,6 +54,9 @@ class AntivirusApp(rumps.App):
         # Timer for periodic updates
         self.timer = rumps.Timer(self.update_menu, 30)
         self.timer.start()
+
+        # Play the Soviet March on startup
+        self.play_soviet_march()
 
     def build_menu(self):
         """Build the application menu."""
@@ -84,6 +95,10 @@ class AntivirusApp(rumps.App):
         self.build_scheduled_menu()
 
         self.menu.add(rumps.separator)
+
+        # Music toggle
+        music_title = "🔊 Silence the March" if self.music_enabled else "🔇 Play Soviet March"
+        self.menu.add(rumps.MenuItem(music_title, callback=self.toggle_music))
 
         # Settings and other items
         self.menu.add(rumps.MenuItem("Settings...", callback=self.open_settings))
@@ -165,16 +180,60 @@ class AntivirusApp(rumps.App):
         self.build_menu()
         self.update_icon()
 
+    def play_soviet_march(self):
+        """Play the Soviet March theme."""
+        if not self.music_enabled:
+            return
+
+        march_path = Path(SOVIET_MARCH)
+        if march_path.exists():
+            # Stop any existing music
+            self.stop_music()
+            # Play with afplay (macOS) in loop mode
+            try:
+                self.music_process = subprocess.Popen(
+                    ["afplay", str(march_path)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except Exception:
+                pass
+
+    def stop_music(self):
+        """Stop the currently playing music."""
+        if self.music_process:
+            try:
+                self.music_process.terminate()
+                self.music_process = None
+            except Exception:
+                pass
+
+    def toggle_music(self, sender):
+        """Toggle the music on/off."""
+        self.music_enabled = not self.music_enabled
+        if self.music_enabled:
+            self.play_soviet_march()
+            sender.title = "🔊 Silence the March"
+        else:
+            self.stop_music()
+            sender.title = "🔇 Play Soviet March"
+
     def update_icon(self):
         """Update the menu bar icon based on status."""
         if self.scanning:
+            self.icon = None
             self.title = ICON_SCANNING
         elif self.recent_threats:
+            self.icon = None
             self.title = ICON_THREAT
-        elif self.monitor and self.monitor.is_running():
-            self.title = ICON_PROTECTED
         else:
-            self.title = ICON_DISABLED
+            # Wide Putin is always watching (protected or not)
+            if Path(ICON_WIDE_PUTIN).exists():
+                self.icon = ICON_WIDE_PUTIN
+                self.title = None
+            else:
+                self.icon = None
+                self.title = "🛡️" if (self.monitor and self.monitor.is_running()) else "⏸️"
 
     def toggle_protection(self, _):
         """Toggle real-time protection."""
@@ -417,6 +476,7 @@ Stay safe out there!""",
 
     def quit_app(self, _):
         """Quit the application."""
+        self.stop_music()
         if self.monitor and self.monitor.is_running():
             self.monitor.stop()
         rumps.quit_application()

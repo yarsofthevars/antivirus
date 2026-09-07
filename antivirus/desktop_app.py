@@ -56,17 +56,19 @@ class AntivirusDesktopApp:
 
         # Wide Putin image
         putin_loaded = False
+        print(f"HAS_PIL: {HAS_PIL}, Image path: {WIDE_PUTIN_IMG}, exists: {Path(WIDE_PUTIN_IMG).exists()}", flush=True)
         if HAS_PIL and Path(WIDE_PUTIN_IMG).exists():
             try:
                 img = Image.open(WIDE_PUTIN_IMG)
-                # Scale up to 150x150 for visibility
-                img = img.resize((150, 150), Image.Resampling.NEAREST)
+                print(f"Image loaded: {img.size}", flush=True)
+                # Keep aspect ratio - 200x100 original, scale to 200x100 (no distortion)
                 self.putin_img = ImageTk.PhotoImage(img)
                 putin_label = tk.Label(self.root, image=self.putin_img, bg=bg_color)
                 putin_label.pack(pady=(20, 5))
                 putin_loaded = True
+                print("Putin displayed!", flush=True)
             except Exception as e:
-                print(f"Image error: {e}")
+                print(f"Image error: {e}", flush=True)
 
         if not putin_loaded:
             # Fallback to emoji

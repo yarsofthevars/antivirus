@@ -1,6 +1,6 @@
 """Minimal cross-platform antivirus with signature-based, YARA, and heuristic detection."""
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 from .scanner import ScanResult, scan_file, scan_directory, scan_path
 from .signatures import add_signature, check_signature, load_signatures
@@ -12,6 +12,12 @@ from .exclusions import ExclusionRule, ExclusionConfig, load_exclusions, should_
 from .heuristics import HeuristicResult, HeuristicMatch, analyze_file, calculate_entropy
 from .reports import ScanReport, generate_report, save_report, list_reports
 from .scheduler import ScheduledTask, Scheduler, load_schedule, add_scheduled_task
+
+# App module (macOS only, requires rumps)
+try:
+    from .app import AntivirusApp
+except ImportError:
+    AntivirusApp = None  # rumps not installed or not on macOS
 
 __all__ = [
     # Version
@@ -64,4 +70,6 @@ __all__ = [
     "Scheduler",
     "load_schedule",
     "add_scheduled_task",
+    # App (macOS menu bar)
+    "AntivirusApp",
 ]

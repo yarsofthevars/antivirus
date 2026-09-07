@@ -680,6 +680,23 @@ def cmd_config_reset(args):
     return 0
 
 
+def cmd_app(args):
+    """Handle the app command (launch menu bar app)."""
+    import sys
+    if sys.platform != "darwin":
+        print("Error: Menu bar app is only available on macOS")
+        return 1
+
+    try:
+        from .app import main as app_main
+        app_main()
+        return 0
+    except ImportError as e:
+        print(f"Error: Could not import app module: {e}")
+        print("Make sure rumps is installed: pip install rumps")
+        return 1
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -901,6 +918,10 @@ def main():
     # config reset
     config_reset_parser = config_subparsers.add_parser("reset", help="Reset configuration")
     config_reset_parser.set_defaults(func=cmd_config_reset)
+
+    # app command (launch menu bar app)
+    app_parser = subparsers.add_parser("app", help="Launch menu bar application (macOS)")
+    app_parser.set_defaults(func=cmd_app)
 
     args = parser.parse_args()
     sys.exit(args.func(args))

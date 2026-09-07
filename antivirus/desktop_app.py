@@ -24,6 +24,7 @@ from .exclusions import load_exclusions
 ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 SOVIET_MARCH = str(ASSETS_DIR / "soviet_march.mp3")
 WIDE_PUTIN_IMG = str(ASSETS_DIR / "wide_putin_big.png")
+WIDE_PUTIN_ICON = str(ASSETS_DIR / "wide_putin_icon.png")
 
 
 class AntivirusDesktopApp:
@@ -35,6 +36,15 @@ class AntivirusDesktopApp:
         self.root.geometry("350x450")
         self.root.configure(bg="#1a1a2e")
         self.root.resizable(False, False)
+
+        # Set window icon (Wide Putin in dock/tab)
+        if HAS_PIL and Path(WIDE_PUTIN_ICON).exists():
+            try:
+                icon_img = Image.open(WIDE_PUTIN_ICON)
+                self.icon_photo = ImageTk.PhotoImage(icon_img)
+                self.root.iconphoto(True, self.icon_photo)
+            except Exception:
+                pass
 
         # Make window stay on top
         self.root.attributes("-topmost", True)
